@@ -44,18 +44,14 @@ export class WorkspaceMovement {
       wsMoveLeft: {
         name: Constants.SHORTCUT_NAMES.MOVE_WS_CURSOR_LEFT,
         preconditionFn: (workspace) => this.canCurrentlyEdit(workspace),
-        callback: (workspace) => {
-          return this.moveWSCursor(workspace, -1, 0);
-        },
+        callback: (workspace) => this.moveWSCursor(workspace, -1, 0),
         keyCodes: [createSerializedKey(KeyCodes.A, [KeyCodes.SHIFT])],
       },
       /** Move the cursor on the workspace to the right. */
       wsMoveRight: {
         name: Constants.SHORTCUT_NAMES.MOVE_WS_CURSOR_RIGHT,
         preconditionFn: (workspace) => this.canCurrentlyEdit(workspace),
-        callback: (workspace) => {
-          return this.moveWSCursor(workspace, 1, 0);
-        },
+        callback: (workspace) => this.moveWSCursor(workspace, 1, 0),
         keyCodes: [createSerializedKey(KeyCodes.D, [KeyCodes.SHIFT])],
       },
 
@@ -63,9 +59,7 @@ export class WorkspaceMovement {
       wsMoveUp: {
         name: Constants.SHORTCUT_NAMES.MOVE_WS_CURSOR_UP,
         preconditionFn: (workspace) => this.canCurrentlyEdit(workspace),
-        callback: (workspace) => {
-          return this.moveWSCursor(workspace, 0, -1);
-        },
+        callback: (workspace) => this.moveWSCursor(workspace, 0, -1),
         keyCodes: [createSerializedKey(KeyCodes.W, [KeyCodes.SHIFT])],
       },
 
@@ -73,9 +67,7 @@ export class WorkspaceMovement {
       wsMoveDown: {
         name: Constants.SHORTCUT_NAMES.MOVE_WS_CURSOR_DOWN,
         preconditionFn: (workspace) => this.canCurrentlyEdit(workspace),
-        callback: (workspace) => {
-          return this.moveWSCursor(workspace, 0, 1);
-        },
+        callback: (workspace) => this.moveWSCursor(workspace, 0, 1),
         keyCodes: [createSerializedKey(KeyCodes.S, [KeyCodes.SHIFT])],
       },
     };
