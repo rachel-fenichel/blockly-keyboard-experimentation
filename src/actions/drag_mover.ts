@@ -14,7 +14,7 @@ import {
 } from 'blockly';
 import type {Block, IDragStrategy, IDragger} from 'blockly';
 import {Mover, MoveInfo} from './mover';
-import {KeyboardDragStrategy} from '../keyboard_drag_strategy';
+import {DragDirection, KeyboardDragStrategy} from '../keyboard_drag_strategy';
 
 /**
  * The distance to move an item, in workspace coordinates, when
@@ -138,6 +138,7 @@ export class DragMover extends Mover {
    */
   override moveConstrained(
     workspace: WorkspaceSvg,
+    direction: DragDirection,
     /* ... */
   ) {
     // Not yet implemented.  Absorb keystroke to avoid moving cursor.

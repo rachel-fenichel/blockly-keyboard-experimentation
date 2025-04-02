@@ -15,6 +15,7 @@ import {
 } from 'blockly';
 import type {Block, BlockSvg, WorkspaceSvg} from 'blockly';
 import {Navigation} from '../navigation';
+import { DragDirection } from '../keyboard_drag_strategy';
 
 const KeyCodes = utils.KeyCodes;
 const createSerializedKey = ShortcutRegistry.registry.createSerializedKey.bind(
@@ -66,7 +67,7 @@ export class Mover {
     {
       name: 'Move left, constrained',
       preconditionFn: (workspace) => this.isMoving(workspace),
-      callback: (workspace) => this.moveConstrained(workspace /* , ...*/),
+      callback: (workspace) => this.moveConstrained(workspace, DragDirection.LEFT),
       keyCodes: [KeyCodes.LEFT],
       allowCollision: true,
     },
@@ -276,7 +277,7 @@ export class Mover {
    */
   moveConstrained(
     workspace: WorkspaceSvg,
-    /* ... */
+    direction: DragDirection,
   ) {
     console.log('moveConstrained');
     // Not yet implemented.  Absorb keystroke to avoid moving cursor.
