@@ -12,8 +12,9 @@ import {
   registry,
   utils,
 } from 'blockly';
-import type {Block, IDragger} from 'blockly';
+import type {Block, IDragStrategy, IDragger} from 'blockly';
 import {Mover, MoveInfo} from './mover';
+import {KeyboardDragStrategy} from '../keyboard_drag_strategy';
 
 /**
  * The distance to move an item, in workspace coordinates, when
@@ -36,6 +37,12 @@ export class DragMover extends Mover {
   protected declare moves: Map<WorkspaceSvg, DragMoveInfo>;
 
   /**
+   * The block's base drag strategy, which will be overridden during
+   * keyboard drags and reset at the end of the drag.
+   */
+  private oldDragStrategy: IDragStrategy | null = null;
+
+  /**
    * Start moving the currently-focused item on workspace, if
    * possible.
    *
@@ -52,6 +59,8 @@ export class DragMover extends Mover {
     // Select and focus block.
     common.setSelected(block);
     cursor.setCurNode(ASTNode.createBlockNode(block));
+
+    this.patchDragStrategy(block);
     // Begin dragging block.
     const DraggerClass = registry.getClassFromOptions(
       registry.Type.BLOCK_DRAGGER,
@@ -85,6 +94,7 @@ export class DragMover extends Mover {
       new utils.Coordinate(0, 0),
     );
 
+    this.unpatchDragStrategy(info.block as BlockSvg);
     this.moves.delete(workspace);
     return true;
   }
@@ -114,6 +124,7 @@ export class DragMover extends Mover {
       new utils.Coordinate(0, 0),
     );
 
+    this.unpatchDragStrategy(info.block as BlockSvg);
     this.moves.delete(workspace);
     return true;
   }
@@ -162,6 +173,29 @@ Use enter to complete the move, or escape to abort.`);
 
     info.dragger.onDrag(info.fakePointerEvent('pointermove'), info.totalDelta);
     return true;
+  }
+
+  /**
+   * Monkeypatch: replace the block's drag strategy and cache the old value.
+   *
+   * @param block The block to patch.
+   */
+  private patchDragStrategy(block: BlockSvg) {
+    // @ts-expect-error block.dragStrategy is private.
+    this.oldDragStrategy = block.dragStrategy;
+    block.setDragStrategy(new KeyboardDragStrategy(block));
+  }
+
+  /**
+   * Undo the monkeypatching of the block's drag strategy.
+   *
+   * @param block The block to patch.
+   */
+  private unpatchDragStrategy(block: BlockSvg) {
+    if (this.oldDragStrategy) {
+      block.setDragStrategy(this.oldDragStrategy);
+      this.oldDragStrategy = null;
+    }
   }
 }
 
