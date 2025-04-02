@@ -6,4 +6,10 @@
 
 import {dragging} from 'blockly';
 
+export enum Direction {
+  Up = 1,
+  Down,
+  Left,
+  Right,
+}
 export class KeyboardDragStrategy extends dragging.BlockDragStrategy {}

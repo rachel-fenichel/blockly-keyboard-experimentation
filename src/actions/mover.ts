@@ -17,7 +17,7 @@ import {
 } from 'blockly';
 import type {BlockSvg, IDragger, IDragStrategy} from 'blockly';
 import {Navigation} from '../navigation';
-import {KeyboardDragStrategy} from '../keyboard_drag_strategy';
+import {Direction, KeyboardDragStrategy} from '../keyboard_drag_strategy';
 
 const KeyCodes = utils.KeyCodes;
 const createSerializedKey = ShortcutRegistry.registry.createSerializedKey.bind(
@@ -87,28 +87,28 @@ export class Mover {
     {
       name: 'Move left, constrained',
       preconditionFn: (workspace) => this.isMoving(workspace),
-      callback: (workspace) => this.moveConstrained(workspace /* , ...*/),
+      callback: (workspace) => this.moveConstrained(workspace, Direction.Left),
       keyCodes: [KeyCodes.LEFT],
       allowCollision: true,
     },
     {
       name: 'Move right unconstrained',
       preconditionFn: (workspace) => this.isMoving(workspace),
-      callback: (workspace) => this.moveConstrained(workspace /* , ... */),
+      callback: (workspace) => this.moveConstrained(workspace, Direction.Right),
       keyCodes: [KeyCodes.RIGHT],
       allowCollision: true,
     },
     {
       name: 'Move up, constrained',
       preconditionFn: (workspace) => this.isMoving(workspace),
-      callback: (workspace) => this.moveConstrained(workspace /* , ... */),
+      callback: (workspace) => this.moveConstrained(workspace, Direction.Up),
       keyCodes: [KeyCodes.UP],
       allowCollision: true,
     },
     {
       name: 'Move down constrained',
       preconditionFn: (workspace) => this.isMoving(workspace),
-      callback: (workspace) => this.moveConstrained(workspace /* , ... */),
+      callback: (workspace) => this.moveConstrained(workspace, Direction.Down),
       keyCodes: [KeyCodes.DOWN],
       allowCollision: true,
     },
@@ -320,12 +320,10 @@ export class Mover {
    * constrained to valid attachment points (if any).
    *
    * @param workspace The workspace to move on.
+   * @param direction The direction of movement.
    * @returns True iff this action applies and has been performed.
    */
-  moveConstrained(
-    workspace: WorkspaceSvg,
-    /* ... */
-  ) {
+  moveConstrained(workspace: WorkspaceSvg, direction: Direction) {
     // Not yet implemented.  Absorb keystroke to avoid moving cursor.
     alert(`Constrained movement not implemented.
 
