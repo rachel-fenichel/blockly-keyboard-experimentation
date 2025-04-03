@@ -14,52 +14,7 @@ import {
   utils,
 } from 'blockly';
 import {LineCursor} from './line_cursor';
-
-export enum Direction {
-  Up = 1,
-  Down,
-  Left,
-  Right,
-}
-
-export function getTiltFromDirection(dir: Direction | undefined): {
-  x: number;
-  y: number;
-} {
-  if (!dir) {
-    return {x: 0, y: 0};
-  }
-  switch (dir) {
-    case Direction.Up:
-      return {x: 0, y: -1};
-    case Direction.Down:
-      return {x: 0, y: 1};
-    case Direction.Left:
-      return {x: -1, y: 0};
-    case Direction.Right:
-      return {x: 1, y: 0};
-  }
-}
-
-export function getDirectionFromTilt(e: PointerEvent): Direction | null {
-  const x = e.tiltX;
-  const y = e.tiltY;
-
-  if (x == 0) {
-    if (y == -1) {
-      return Direction.Up;
-    } else if (y == 1) {
-      return Direction.Down;
-    }
-  } else if (y == 0) {
-    if (x == -1) {
-      return Direction.Left;
-    } else if (x == 1) {
-      return Direction.Right;
-    }
-  }
-  return null;
-}
+import {Direction, getDirectionFromXY} from './drag_direction';
 
 /** Represents a nearby valid connection. */
 interface ConnectionCandidate {
@@ -77,8 +32,6 @@ interface ConnectionCandidate {
 export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
   lastDirection: Direction | null = null;
 
-  hasMoved: boolean = false;
-
   private searchNode: ASTNode | null = null;
 
   override startDrag(e?: PointerEvent) {
@@ -92,9 +45,8 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
 
   override drag(newLoc: utils.Coordinate, e?: PointerEvent): void {
     if (!e) return;
-    this.lastDirection = getDirectionFromTilt(e);
+    this.lastDirection = getDirectionFromXY({x: e.tiltX, y: e.tiltY});
     super.drag(newLoc);
-    this.hasMoved = true;
     // Move to new location if it's near a connection.
     // @ts-expect-error connectionCandidate is private
     const candidate = this.connectionCandidate;
@@ -107,10 +59,11 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
     //     // TODO: Now update the moveInfo for this drag to have the correct totalDelta.
     // }
   }
+
   private getLocalConnections(draggingBlock: BlockSvg) {
     const available = draggingBlock.getConnections_(false);
     // TODO: why is there a filter here?
-    if (this.lastDirection) {
+    if (this.isConstrainedMovement()) {
       available.filter((conn) => {
         return conn.type == PREVIOUS_STATEMENT || conn.type == NEXT_STATEMENT;
       });
@@ -127,10 +80,8 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
     delta: utils.Coordinate,
   ): ConnectionCandidate | null {
     const cursor = draggingBlock.workspace.getCursor() as LineCursor;
-    // @ts-expect-error startParentConn is private.
-    if (!this.startParentConn) return null;
 
-    const initialNode = this.searchNode; //ASTNode.createConnectionNode(this.startParentConn);
+    const initialNode = this.searchNode;
     if (!initialNode) return null;
 
     const localConns = this.getLocalConnections(draggingBlock);
@@ -180,13 +131,17 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
     return candidateConnection;
   }
 
+  isConstrainedMovement(): boolean {
+    return !!this.lastDirection;
+  }
+
   override currCandidateIsBetter(
     currCandidate: ConnectionCandidate,
     delta: utils.Coordinate,
     newCandidate: ConnectionCandidate,
   ): boolean {
-    if (this.lastDirection) {
-      return false;
+    if (this.isConstrainedMovement()) {
+      return false; // New connection is always better during a constrained drag.
     }
     // @ts-expect-error currCandidateIsBetter is private.
     return super.currCandidateIsBetter(currCandidate, delta, newCandidate);
@@ -196,7 +151,7 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
     draggingBlock: BlockSvg,
     delta: utils.Coordinate,
   ): ConnectionCandidate | null {
-    if (this.lastDirection) {
+    if (this.isConstrainedMovement()) {
       return this.getConstrainedConnectionCandidate(draggingBlock, delta);
     }
     // @ts-expect-error getConnctionCandidate is private.

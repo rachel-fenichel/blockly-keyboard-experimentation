@@ -17,11 +17,8 @@ import {
 } from 'blockly';
 import type {BlockSvg, IDragger, IDragStrategy} from 'blockly';
 import {Navigation} from '../navigation';
-import {
-  Direction,
-  KeyboardDragStrategy,
-  getTiltFromDirection,
-} from '../keyboard_drag_strategy';
+import {KeyboardDragStrategy} from '../keyboard_drag_strategy';
+import {Direction, getXYFromDirection} from '../drag_direction';
 
 const KeyCodes = utils.KeyCodes;
 const createSerializedKey = ShortcutRegistry.registry.createSerializedKey.bind(
@@ -466,7 +463,7 @@ export class MoveInfo {
       ),
     );
 
-    const tilts = getTiltFromDirection(direction);
+    const tilts = getXYFromDirection(direction);
     return new PointerEvent(type, {
       clientX: blockCoords.x,
       clientY: blockCoords.y,
