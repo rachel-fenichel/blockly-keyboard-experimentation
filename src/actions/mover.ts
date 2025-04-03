@@ -17,7 +17,11 @@ import {
 } from 'blockly';
 import type {BlockSvg, IDragger, IDragStrategy} from 'blockly';
 import {Navigation} from '../navigation';
-import {Direction, KeyboardDragStrategy} from '../keyboard_drag_strategy';
+import {
+  Direction,
+  KeyboardDragStrategy,
+  getTiltFromDirection,
+} from '../keyboard_drag_strategy';
 
 const KeyCodes = utils.KeyCodes;
 const createSerializedKey = ShortcutRegistry.registry.createSerializedKey.bind(
@@ -324,11 +328,14 @@ export class Mover {
    * @returns True iff this action applies and has been performed.
    */
   moveConstrained(workspace: WorkspaceSvg, direction: Direction) {
-    // Not yet implemented.  Absorb keystroke to avoid moving cursor.
-    alert(`Constrained movement not implemented.
+    if (!workspace) return false;
+    const info = this.moves.get(workspace);
+    if (!info) throw new Error('no move info for workspace');
 
-Use ctrl+arrow or alt+arrow (option+arrow on macOS) for unconstrained move.
-Use enter to complete the move, or escape to abort.`);
+    info.dragger.onDrag(
+      info.fakePointerEvent('pointermove', direction),
+      info.totalDelta,
+    );
     return true;
   }
 
@@ -447,7 +454,7 @@ export class MoveInfo {
    * @returns A synthetic PointerEvent that can be consumed by Blockly's
    *     dragging code.
    */
-  fakePointerEvent(type: string): PointerEvent {
+  fakePointerEvent(type: string, direction?: Direction): PointerEvent {
     const workspace = this.block.workspace;
     if (!(workspace instanceof WorkspaceSvg)) throw new TypeError();
 
@@ -458,9 +465,13 @@ export class MoveInfo {
         this.startLocation.y + this.totalDelta.y,
       ),
     );
+
+    const tilts = getTiltFromDirection(direction);
     return new PointerEvent(type, {
       clientX: blockCoords.x,
       clientY: blockCoords.y,
+      tiltX: tilts.x,
+      tiltY: tilts.y,
     });
   }
 }
