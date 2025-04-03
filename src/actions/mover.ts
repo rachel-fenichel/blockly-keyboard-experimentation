@@ -32,7 +32,7 @@ const createSerializedKey = ShortcutRegistry.registry.createSerializedKey.bind(
  * The distance to move an item, in workspace coordinates, when
  * making an unconstrained move.
  */
-const UNCONSTRAINED_MOVE_DISTANCE = 20;
+const UNCONSTRAINED_MOVE_DISTANCE = 30;
 
 /**
  * Actions for moving blocks with keyboard shortcuts.

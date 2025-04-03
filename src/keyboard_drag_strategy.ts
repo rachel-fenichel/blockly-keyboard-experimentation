@@ -4,7 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {ASTNode, BlockSvg, dragging, RenderedConnection, utils} from 'blockly';
+import {
+  ASTNode,
+  BlockSvg,
+  dragging,
+  NEXT_STATEMENT,
+  PREVIOUS_STATEMENT,
+  RenderedConnection,
+  utils,
+} from 'blockly';
 import {LineCursor} from './line_cursor';
 
 export enum Direction {
@@ -33,7 +41,7 @@ export function getTiltFromDirection(dir: Direction | undefined): {
   }
 }
 
-export function getDirectionFromTilt(e: PointerEvent): Direction {
+export function getDirectionFromTilt(e: PointerEvent): Direction | null {
   const x = e.tiltX;
   const y = e.tiltY;
 
@@ -50,7 +58,7 @@ export function getDirectionFromTilt(e: PointerEvent): Direction {
       return Direction.Right;
     }
   }
-  throw new Error('Could not get direction from tilt information');
+  return null;
 }
 
 /** Represents a nearby valid connection. */
@@ -69,18 +77,49 @@ interface ConnectionCandidate {
 export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
   lastDirection: Direction | null = null;
 
+  hasMoved: boolean = false;
+
+  private searchNode: ASTNode | null = null;
+
   override startDrag(e?: PointerEvent) {
     super.startDrag(e);
     // @ts-expect-error block and startLoc are private.
     this.block.moveDuringDrag(this.startLoc);
+    // TODO: Now update the moveInfo for this drag to have the correct totalDelta.
+    // @ts-expect-error startParentConn is private.
+    this.searchNode = ASTNode.createConnectionNode(this.startParentConn);
   }
 
   override drag(newLoc: utils.Coordinate, e?: PointerEvent): void {
     if (!e) return;
-    if (e.tiltX || e.tiltY) {
-      this.lastDirection = getDirectionFromTilt(e);
-    }
+    this.lastDirection = getDirectionFromTilt(e);
     super.drag(newLoc);
+    this.hasMoved = true;
+    // Move to new location if it's near a connection.
+    // @ts-expect-error connectionCandidate is private
+    const candidate = this.connectionCandidate;
+    // if (candidate) {
+    //     const candidateLocation = candidate.neighbour;
+    //     const offsetLocation = new utils.Coordinate(candidateLocation.x + 10,
+    //         candidateLocation.y + 10);
+    //     // @ts-expect-error this.block is private.
+    //     this.block.moveDuringDrag(offsetLocation);
+    //     // TODO: Now update the moveInfo for this drag to have the correct totalDelta.
+    // }
+  }
+  private getLocalConnections(draggingBlock: BlockSvg) {
+    const available = draggingBlock.getConnections_(false);
+    // TODO: why is there a filter here?
+    if (this.lastDirection) {
+      available.filter((conn) => {
+        return conn.type == PREVIOUS_STATEMENT || conn.type == NEXT_STATEMENT;
+      });
+    }
+    const lastOnStack = draggingBlock.lastConnectionInStack(true);
+    if (lastOnStack && lastOnStack !== draggingBlock.nextConnection) {
+      available.push(lastOnStack);
+    }
+    return available;
   }
 
   private getConstrainedConnectionCandidate(
@@ -91,19 +130,16 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
     // @ts-expect-error startParentConn is private.
     if (!this.startParentConn) return null;
 
-    // @ts-expect-error getLocalConnections is private
+    const initialNode = this.searchNode; //ASTNode.createConnectionNode(this.startParentConn);
+    if (!initialNode) return null;
+
     const localConns = this.getLocalConnections(draggingBlock);
     const connectionChecker = draggingBlock.workspace.connectionChecker;
+
     let candidateConnection: ConnectionCandidate | null = null;
 
-    let potentialConnection: RenderedConnection =
-      // @ts-expect-error connectionCandidate is private.
-      this.connectionCandidate ?? this.startParentConn;
-
-    let potential: ASTNode | null =
-      ASTNode.createConnectionNode(potentialConnection);
+    let potential: ASTNode | null = initialNode;
     while (potential && !candidateConnection) {
-      //if (delta.x == 0 && delta.y < 0) {
       if (
         this.lastDirection === Direction.Up ||
         this.lastDirection === Direction.Left
@@ -112,7 +148,6 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
           // @ts-expect-error isConnectionType is private.
           return node && ASTNode.isConnectionType(node.getType());
         });
-        //} else if (delta.x == 0 && delta.y > 0) {
       } else if (
         this.lastDirection === Direction.Down ||
         this.lastDirection === Direction.Right
@@ -135,6 +170,13 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
         }
       });
     }
+    // Build and return a ConnectionCandidate.
+
+    if (candidateConnection) {
+      this.searchNode = ASTNode.createConnectionNode(
+        (candidateConnection as ConnectionCandidate).neighbour,
+      );
+    }
     return candidateConnection;
   }
 
@@ -144,7 +186,7 @@ export class KeyboardDragStrategy extends dragging.BlockDragStrategy {
     newCandidate: ConnectionCandidate,
   ): boolean {
     if (this.lastDirection) {
-      return true;
+      return false;
     }
     // @ts-expect-error currCandidateIsBetter is private.
     return super.currCandidateIsBetter(currCandidate, delta, newCandidate);
