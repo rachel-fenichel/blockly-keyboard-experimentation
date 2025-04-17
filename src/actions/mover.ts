@@ -15,7 +15,6 @@ import {
   ASTNode,
   common,
   Connection,
-  Events,
   registry,
   utils,
   WorkspaceSvg,
